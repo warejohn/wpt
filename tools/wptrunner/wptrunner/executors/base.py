@@ -7,6 +7,7 @@ import os
 import threading
 import traceback
 import socket
+import time
 from six.moves.urllib.parse import urljoin, urlsplit, urlunsplit
 from abc import ABCMeta, abstractmethod
 
@@ -304,11 +305,14 @@ class RefTestImplementation(object):
         assert relation in ("==", "!=")
         if not fuzzy or fuzzy == ((0,0), (0,0)):
             equal = hashes[0] == hashes[1]
+            tic = time.time()
             # sometimes images can have different hashes, but pixels can be identical.
             if not equal:
                 self.logger.info("Image hashes didn't match, checking pixel differences")
                 max_per_channel, pixels_different = self.get_differences(screenshots)
                 equal = pixels_different == 0 and max_per_channel == 0
+                toc = time.time()
+                self.logger.info("Took an extra of %f milliseconds" % ((toc-tic)*1000))
         else:
             max_per_channel, pixels_different = self.get_differences(screenshots)
             allowed_per_channel, allowed_different = fuzzy

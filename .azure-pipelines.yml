@@ -20,6 +20,7 @@
 trigger:
 - epochs/*
 - triggers/*
+- clopez/*
 
 jobs:
 # The affected tests jobs are unconditional for speed, as most PRs have one or
@@ -241,6 +242,7 @@ jobs:
   condition: |
     or(eq(variables['Build.SourceBranch'], 'refs/heads/epochs/six_hourly'),
        eq(variables['Build.SourceBranch'], 'refs/heads/triggers/edge_dev'),
+       eq(variables['Build.SourceBranch'], 'refs/heads/clopez/test_ci'),
        and(eq(variables['Build.Reason'], 'Manual'), variables['run_all_edge_dev']))
   strategy:
     parallel: 10 # chosen to make runtime ~2h
@@ -277,6 +279,7 @@ jobs:
   condition: |
     or(eq(variables['Build.SourceBranch'], 'refs/heads/epochs/six_hourly'),
        eq(variables['Build.SourceBranch'], 'refs/heads/triggers/edge_canary'),
+       eq(variables['Build.SourceBranch'], 'refs/heads/clopez/test_ci'),
        and(eq(variables['Build.Reason'], 'Manual'), variables['run_all_edge_canary']))
   strategy:
     parallel: 10 # chosen to make runtime ~2h
@@ -313,6 +316,7 @@ jobs:
   condition: |
     or(eq(variables['Build.SourceBranch'], 'refs/heads/epochs/daily'),
        eq(variables['Build.SourceBranch'], 'refs/heads/triggers/safari_stable'),
+       eq(variables['Build.SourceBranch'], 'refs/heads/clopez/test_ci'),
        and(eq(variables['Build.Reason'], 'Manual'), variables['run_all_safari']))
   strategy:
     parallel: 5 # chosen to make runtime ~2h
@@ -348,6 +352,7 @@ jobs:
   condition: |
     or(eq(variables['Build.SourceBranch'], 'refs/heads/epochs/six_hourly'),
        eq(variables['Build.SourceBranch'], 'refs/heads/triggers/safari_preview'),
+       eq(variables['Build.SourceBranch'], 'refs/heads/clopez/test_ci'),
        and(eq(variables['Build.Reason'], 'Manual'), variables['run_all_safari_preview']))
   strategy:
     parallel: 5 # chosen to make runtime ~2h

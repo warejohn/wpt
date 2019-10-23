@@ -22,14 +22,14 @@ logger = logging.getLogger()
 def get_triggers(event):
     # Set some variables that we use to get the commits on the current branch
     ref_prefix = "refs/heads/"
-    pull_request = "pull_request" in event
+    is_pr = "pull_request" in event
     branch = None
-    if not pull_request and "ref" in event:
+    if not is_pr and "ref" in event:
         branch = event["ref"]
         if branch.startswith(ref_prefix):
             branch = branch[len(ref_prefix):]
 
-    return pull_request, branch
+    return is_pr, branch
 
 
 def fetch_event_data(queue):
@@ -42,9 +42,7 @@ def fetch_event_data(queue):
 
     task_data = queue.task(task_id)
 
-    event_data = task_data.get("extra", {}).get("github_event")
-    if event_data is not None:
-        return event_data
+    return task_data.get("extra", {}).get("github_event")
 
 
 def filter_triggers(event, all_tasks):
@@ -138,7 +136,7 @@ def get_fetch_rev(event):
 
 
 def build_full_command(event, task):
-    fetch_ref, fetch_rev = get_fetch_rev(event)
+    fetch_ref, fetch_sha = get_fetch_rev(event)
     cmd_args = {
         "task_name": task["name"],
         "repo_url": event["repository"]["clone_url"],
@@ -149,8 +147,8 @@ def build_full_command(event, task):
 
     options = task.get("options", {})
     options_args = []
-    if fetch_rev is not None:
-        options_args.append("--rev=%s" % fetch_rev)
+    if fetch_sha is not None:
+        options_args.append("--rev=%s" % fetch_sha)
     if options.get("oom-killer"):
         options_args.append("--oom-killer")
     if options.get("xvfb"):
@@ -165,12 +163,10 @@ def build_full_command(event, task):
         options_args.append("--browser=%s" % browser)
     if options.get("channel"):
         options_args.append("--channel=%s" % options["channel"])
-    if options.get("checkout"):
-        options_args.append("--checkout=%s" % options["checkout"])
     if options.get("install-certificates"):
         options_args.append("--install-certificates")
 
-    cmd_args["options_str"] = " ".join("%s" % item for item in options_args)
+    cmd_args["options_str"] = " ".join(str(item) for item in options_args)
 
     install_packages = task.get("install")
     if install_packages:

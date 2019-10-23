@@ -20,7 +20,7 @@ def data_path(filename):
 @pytest.mark.xfail(sys.version_info.major == 2,
                    reason="taskcluster library has an encoding bug")
 def test_verify_taskcluster_yml():
-    """Verify that the jsone in the .taskcluster.yml is valid"""
+    """Verify that the json-e in the .taskcluster.yml is valid"""
     with open(os.path.join(root, ".taskcluster.yml")) as f:
         template = yaml.safe_load(f)
 

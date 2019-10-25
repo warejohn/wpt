@@ -1806,6 +1806,13 @@ policies and contribution forms [3].
     }
     expose(assert_any, "assert_any");
 
+    function assert_precondition(precondition, description) {
+        if (!precondition) {
+            throw new PreconditionFailedError(description);
+        }
+    }
+    expose(assert_precondition, "assert_precondition");
+
     function Test(name, properties)
     {
         if (tests.file_is_test && tests.tests.length) {
@@ -1850,7 +1857,8 @@ policies and contribution forms [3].
         PASS:0,
         FAIL:1,
         TIMEOUT:2,
-        NOTRUN:3
+        NOTRUN:3,
+        PRECONDITION_FAILED:4
     };
 
     Test.prototype = merge({}, Test.statuses);
@@ -1910,10 +1918,11 @@ policies and contribution forms [3].
             if (this.phase >= this.phases.HAS_RESULT) {
                 return;
             }
+            var status = e instanceof PreconditionFailedError ? this.PRECONDITION_FAILED : this.FAIL;
             var message = String((typeof e === "object" && e !== null) ? e.message : e);
             var stack = e.stack ? e.stack : null;
 
-            this.set_status(this.FAIL, message, stack);
+            this.set_status(status, message, stack);
             this.phase = this.phases.HAS_RESULT;
             this.done();
         }
@@ -3054,6 +3063,7 @@ policies and contribution forms [3].
         status_text[Test.prototype.FAIL] = "Fail";
         status_text[Test.prototype.TIMEOUT] = "Timeout";
         status_text[Test.prototype.NOTRUN] = "Not Run";
+        status_text[Test.prototype.PRECONDITION_FAILED] = "Precondition Failed";
 
         var status_number = {};
         forEach(tests,
@@ -3438,6 +3448,13 @@ policies and contribution forms [3].
         return lines.slice(i).join("\n");
     }
 
+    function PreconditionFailedError(message)
+    {
+        AssertionError.call(this, message);
+    }
+    PreconditionFailedError.prototype = Object.create(AssertionError.prototype);
+    expose(PreconditionFailedError, "PreconditionFailedError");
+
     function make_message(function_name, description, error, substitutions)
     {
         for (var p in substitutions) {
@@ -3750,7 +3767,7 @@ table#results {\
 \
 table#results th:first-child,\
 table#results td:first-child {\
-    width:4em;\
+    width:8em;\
 }\
 \
 table#results th:last-child,\
@@ -3791,7 +3808,11 @@ tr.notrun > td:first-child {\
     color:blue;\
 }\
 \
-.pass > td:first-child, .fail > td:first-child, .timeout > td:first-child, .notrun > td:first-child {\
+tr.preconditionfailed > td:first-child {\
+    color:blue;\
+}\
+\
+.pass > td:first-child, .fail > td:first-child, .timeout > td:first-child, .notrun > td:first-child, .preconditionfailed > td:first-child {\
     font-variant:small-caps;\
 }\
 \

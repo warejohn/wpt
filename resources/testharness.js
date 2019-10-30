@@ -791,14 +791,6 @@ policies and contribution forms [3].
     }
 
     function done() {
-        if (tests.tests.length === 0) {
-            tests.set_file_is_test();
-        }
-        if (tests.file_is_test) {
-            // file is test files never have asynchronous cleanup logic,
-            // meaning the fully-synchronous `done` function can be used here.
-            tests.tests[0].done();
-        }
         tests.end_wait();
     }
 
@@ -2393,7 +2385,8 @@ policies and contribution forms [3].
     TestsStatus.statuses = {
         OK:0,
         ERROR:1,
-        TIMEOUT:2
+        TIMEOUT:2,
+        PRECONDITION_FAILED:3
     };
 
     TestsStatus.prototype = merge({}, TestsStatus.statuses);
@@ -3057,6 +3050,7 @@ policies and contribution forms [3].
         status_text_harness[harness_status.OK] = "OK";
         status_text_harness[harness_status.ERROR] = "Error";
         status_text_harness[harness_status.TIMEOUT] = "Timeout";
+        status_text_harness[harness_status.PRECONDITION_FAILED] = "Precondition Failed";
 
         var status_text = {};
         status_text[Test.prototype.PASS] = "Pass";
@@ -3383,9 +3377,6 @@ policies and contribution forms [3].
      */
     function assert(expected_true, function_name, description, error, substitutions)
     {
-        if (tests.tests.length === 0) {
-            tests.set_file_is_test();
-        }
         if (expected_true !== true) {
             var msg = make_message(function_name, description,
                                    error, substitutions);
@@ -3682,20 +3673,19 @@ policies and contribution forms [3].
     var tests = new Tests();
 
     if (global_scope.addEventListener) {
-        var error_handler = function(message, stack) {
-            if (tests.tests.length === 0 && !tests.allow_uncaught_exception) {
-                tests.set_file_is_test();
-            }
-
+        var error_handler = function(error, message, stack) {
+            var precondition_failed = error instanceof PreconditionFailedError;
             if (tests.file_is_test) {
                 var test = tests.tests[0];
                 if (test.phase >= test.phases.HAS_RESULT) {
                     return;
                 }
-                test.set_status(test.FAIL, message, stack);
+                var status = precondition_failed ? test.PRECONDITION_FAILED : test.FAIL;
+                test.set_status(status, message, stack);
                 test.phase = test.phases.HAS_RESULT;
             } else if (!tests.allow_uncaught_exception) {
-                tests.status.status = tests.status.ERROR;
+                var status = precondition_failed ? tests.status.PRECONDITION_FAILED : tests.status.ERROR
+                tests.status.status = status;
                 tests.status.message = message;
                 tests.status.stack = stack;
             }
@@ -3710,26 +3700,27 @@ policies and contribution forms [3].
         };
 
         addEventListener("error", function(e) {
-            var message = e.message;
             var stack;
             if (e.error && e.error.stack) {
                 stack = e.error.stack;
             } else {
                 stack = e.filename + ":" + e.lineno + ":" + e.colno;
             }
-            error_handler(message, stack);
+            error_handler(e.error, e.message, stack);
         }, false);
 
         addEventListener("unhandledrejection", function(e) {
-            var reason;
-            if (e.reason) {
-                reason  = e.reason.message ? e.reason.message : e.reason;
+            var message;
+            if (e.reason && e.reason.message) {
+                message = "Unhandled rejection: " + e.reason.message;
             } else {
-                reason = e;
+                message = "Unhandled rejection";
             }
-            var message = "Unhandled rejection: " + reason;
-            // There's no stack for unhandled rejections.
-            error_handler(message);
+            var stack;
+            if (e.reason && e.reason.stack) {
+                stack = e.reason.stack;
+            }
+            error_handler(e.reason, message, stack);
         }, false);
     }
 

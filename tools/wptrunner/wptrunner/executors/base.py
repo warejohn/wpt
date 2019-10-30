@@ -58,7 +58,8 @@ def strip_server(url):
 class TestharnessResultConverter(object):
     harness_codes = {0: "OK",
                      1: "ERROR",
-                     2: "TIMEOUT"}
+                     2: "TIMEOUT",
+                     3: "PRECONDITION_FAILED"}
 
     test_codes = {0: "PASS",
                   1: "FAIL",

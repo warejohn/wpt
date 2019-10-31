@@ -122,6 +122,9 @@ def pytest_result_converter(self, test, data):
     return (harness_result, subtest_results)
 
 
+def crashtest_result_converter(self, test, result):
+    return test.result_cls(**result), []
+
 class ExecutorException(Exception):
     def __init__(self, status, message):
         self.status = status
@@ -254,6 +257,10 @@ class RefTestExecutor(TestExecutor):
                               debug_info=debug_info)
 
         self.screenshot_cache = screenshot_cache
+
+
+class CrashtestExecutor(TestExecutor):
+    convert_result = crashtest_result_converter
 
 
 class RefTestImplementation(object):

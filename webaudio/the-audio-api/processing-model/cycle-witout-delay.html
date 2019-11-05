@@ -7,29 +7,30 @@
   </head>
   <body>
     <script>
-      const t = async_test(
-        "Test that cycles that don't contain a DelayNode are muted"
-      );
-      t.step(function() {
-          var off = new OfflineAudioContext(1, 512, 48000);
-          var osc = new OscillatorNode(off);
-          var fb = new GainNode(off);
-          // zero delay feedback loop
-          osc.connect(fb).connect(fb).connect(off.destination);
-          osc.start(0);
-          off.startRendering().then((b) => {
-              var samples = b.getChannelData(0);
-              var silent = true;
-              for (var i = 0; i < samples.length; i++) {
-                if (samples[i] != 0.0) {
-                  silent = false;
-                  break;
-                }
-              }
-              assert_true(silent);
-              t.done();
-          });
-      });
+      function doTest() {
+        var off = new OfflineAudioContext(1, 512, 48000);
+        var osc = new OscillatorNode(off);
+        var fb = new GainNode(off);
+        // zero delay feedback loop
+        osc.connect(fb).connect(fb).connect(off.destination);
+        osc.start(0);
+        return off.startRendering().then((b) => {
+          return Promise.resolve(b.getChannelData(0));
+        });
+      }
+
+      promise_test(() => {
+        return doTest().then(samples => {
+          var silent = true;
+          for (var i = 0; i < samples.length; i++) {
+            if (samples[i] != 0.0) {
+              silent = false;
+              break;
+            }
+          }
+          assert_true(silent);
+        });
+      }, 'Test that cycles that don\'t contain a DelayNode are muted');
     </script>
   </body>
 </html>

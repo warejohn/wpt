@@ -191,14 +191,19 @@
 
     deletionParent.removeChild(descendant1);
     assert_equals(deletionParent.getAttribute("aria-activedescendant"), "content-attr-element");
+
+    // As it was not explitly set, the attr-associated-element is computed from the content attribute,
+    // and since descendant1 has been removed from the DOM, it is not valid.
     assert_equals(deletionParent.ariaActiveDescendantElement, null);
 
     // Deleting an element set via the IDL attribute.
     deletionParent.ariaActiveDescendantElement = descendant2;
     assert_equals(deletionParent.getAttribute("aria-activedescendant"), "idl-attr-element");
 
+    // The element is still retrieved because it was explicitly set, and was at that point
+    // in a valid scope.
     deletionParent.removeChild(descendant2);
-    assert_equals(deletionParent.ariaActiveDescendantElement, null);
+    assert_equals(deletionParent.ariaActiveDescendantElement, descendant2);
 
     // The content attribute will still reflect the id.
     assert_equals(deletionParent.getAttribute("aria-activedescendant"), "idl-attr-element");
@@ -255,13 +260,16 @@
 
     // Move the referenced element into shadow DOM.
     shadowHost.appendChild(optionElement);
-    assert_equals(lightParent.ariaActiveDescendantElement, null);
+    assert_equals(lightParent.ariaActiveDescendantElement, optionElement);
+
+    // As it was explicitly set, it is still able to be gotten even though it is in
+    // a different scope.
     assert_equals(lightParent.getAttribute("aria-activedescendant"), "light-element");
 
     // Move the referenced element back into light DOM.
     lightParent.appendChild(optionElement);
     assert_equals(lightParent.ariaActiveDescendantElement, optionElement);
-  }, "Reparenting an element into a descendant shadow scope nullifies the element reference.");
+  }, "Reparenting an element into a descendant shadow scope does not nullify the element reference.");
   </script>
 
   <div id="myBillingId">Billing</div>
@@ -290,8 +298,10 @@
     assert_array_equals(input2.ariaLabelledByElements, [billingElement, addressElement], "Testing IDL setter/getter.");
     assert_equals(input2.getAttribute("aria-labelledby"), "myBillingId myAddressId");
 
+    // Remove the element from the DOM, but as it was explicitly set whilst in a valid scope
+    // it can still be retrieved.
     billingElement.remove();
-    assert_array_equals(input2.ariaLabelledByElements, [addressElement]);
+    assert_array_equals(input2.ariaLabelledByElements, [billingElement, addressElement]);
 
     input2.ariaLabelledByElements = [];
     assert_array_equals(input2.ariaLabelledByElements, [], "Testing IDL setter/getter for empty array.");
